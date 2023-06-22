@@ -1,12 +1,20 @@
 
 package cn.jystudio.bluetooth.escpos;
 
+import static com.rt.printerlibrary.enumerate.Print80StatusCmd.cmd_Connect_status;
+import static com.rt.printerlibrary.enumerate.Print80StatusCmd.cmd_Exhausted_paper;
+import static com.rt.printerlibrary.enumerate.Print80StatusCmd.cmd_IsPrinting;
+import static com.rt.printerlibrary.enumerate.Print80StatusCmd.cmd_Opencover;
+import static com.rt.printerlibrary.enumerate.Print80StatusCmd.cmd_other_error;
+import static com.rt.printerlibrary.enumerate.Print80StatusCmd.cmd_outpaper;
+
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.util.Base64;
 import android.util.Log;
 import cn.jystudio.bluetooth.BluetoothService;
 import cn.jystudio.bluetooth.BluetoothServiceStateObserver;
+import cn.jystudio.bluetooth.PolposMP80Observer;
 import cn.jystudio.bluetooth.escpos.command.sdk.Command;
 import cn.jystudio.bluetooth.escpos.command.sdk.PrintPicture;
 import cn.jystudio.bluetooth.escpos.command.sdk.PrinterCommand;
@@ -16,13 +24,20 @@ import com.google.zxing.EncodeHintType;
 import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
+import com.rt.printerlibrary.cmd.Cmd;
+import com.rt.printerlibrary.cmd.EscFactory;
+import com.rt.printerlibrary.enumerate.Print80StatusCmd;
+import com.rt.printerlibrary.factory.cmd.CmdFactory;
+import com.rt.printerlibrary.factory.printer.PrinterFactory;
+import com.rt.printerlibrary.factory.printer.UniversalPrinterFactory;
+import com.rt.printerlibrary.printer.RTPrinter;
 
 import javax.annotation.Nullable;
 import java.nio.charset.Charset;
 import java.util.*;
 
 public class RNBluetoothEscposPrinterModule extends ReactContextBaseJavaModule
-        implements BluetoothServiceStateObserver {
+        implements BluetoothServiceStateObserver, PolposMP80Observer {
     private static final String TAG = "BluetoothEscposPrinter";
 
     public static final int WIDTH_58 = 384;
@@ -33,6 +48,8 @@ public class RNBluetoothEscposPrinterModule extends ReactContextBaseJavaModule
     private int deviceWidth = WIDTH_58;
     private BluetoothService mService;
 
+    private RTPrinter rtPrinter = null;
+    private PrinterFactory printerFactory;
 
     public RNBluetoothEscposPrinterModule(ReactApplicationContext reactContext,
                                           BluetoothService bluetoothService) {
@@ -40,6 +57,7 @@ public class RNBluetoothEscposPrinterModule extends ReactContextBaseJavaModule
         this.reactContext = reactContext;
         this.mService = bluetoothService;
         this.mService.addStateObserver(this);
+        this.mService.addPolposObserver(this);
     }
 
     @Override
@@ -297,7 +315,7 @@ public class RNBluetoothEscposPrinterModule extends ReactContextBaseJavaModule
         for(int i=0;i<rowsToPrint.length;i++){
             rowsToPrint[i].append("\n\r");//wrap line..
             try {
- 
+
                 if (!sendDataByte(PrinterCommand.POS_Print_Text(rowsToPrint[i].toString(), encoding, codepage, widthTimes, heigthTimes, fonttype))) {
                     promise.reject("COMMAND_NOT_SEND");
                     return;
@@ -315,35 +333,40 @@ public class RNBluetoothEscposPrinterModule extends ReactContextBaseJavaModule
     }
 
     @ReactMethod
-    public void printPic(String base64encodeStr, @Nullable  ReadableMap options) {
-        int width = 0;
-        int height = 20;
-        int leftPadding = 0;
+    public void printPic(String base64encodeStr, @Nullable  ReadableMap options, Promise promise) {
+        try {
+            int width = 0;
+            int height = 20;
+            int leftPadding = 0;
 
-        if(options!=null){
-            width = options.hasKey("width") ? options.getInt("width") : 0;
-            leftPadding = options.hasKey("left") ? options.getInt("left") : 0;
-            height = options.hasKey("height") ? options.getInt("height") : 20;
-        }
+            if(options!=null){
+                width = options.hasKey("width") ? options.getInt("width") : 0;
+                leftPadding = options.hasKey("left") ? options.getInt("left") : 0;
+                height = options.hasKey("height") ? options.getInt("height") : 20;
+            }
 
-        //cannot larger then devicesWith;
-        if(width > deviceWidth || width == 0){
-            width = deviceWidth;
-        }
+            //cannot larger then devicesWith;
+            if(width > deviceWidth || width == 0){
+                width = deviceWidth;
+            }
 
-        byte[] bytes = Base64.decode(base64encodeStr, Base64.DEFAULT);
-        Bitmap mBitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-        int nMode = 0;
-        if (mBitmap != null) {
-            
-            byte[] data = PrintPicture.POS_PrintBMP(mBitmap, width, nMode, leftPadding);
-            
-            sendDataByte(Command.ESC_Init);
-            sendDataByte(Command.LF);
-            sendDataByte(data);
-            sendDataByte(PrinterCommand.POS_Set_PrtAndFeedPaper(height));
-            // sendDataByte(PrinterCommand.POS_Set_Cut(1));
-            sendDataByte(PrinterCommand.POS_Set_PrtInit());
+            byte[] bytes = Base64.decode(base64encodeStr, Base64.DEFAULT);
+            Bitmap mBitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+            int nMode = 0;
+            if (mBitmap != null) {
+
+                byte[] data = PrintPicture.POS_PrintBMP(mBitmap, width, nMode, leftPadding);
+
+                sendDataByte(Command.ESC_Init);
+                sendDataByte(Command.LF);
+                sendDataByte(data);
+                sendDataByte(PrinterCommand.POS_Set_PrtAndFeedPaper(height));
+                // sendDataByte(PrinterCommand.POS_Set_Cut(1));
+                sendDataByte(PrinterCommand.POS_Set_PrtInit());
+                promise.resolve("PRINTED");
+            }
+        } catch (Exception error) {
+            promise.resolve("ERROR"+ error.getMessage());
         }
     }
 
@@ -385,13 +408,13 @@ public class RNBluetoothEscposPrinterModule extends ReactContextBaseJavaModule
             promise.reject("COMMAND_NOT_SEND");
         }
     }
-     
+
     @ReactMethod
     public void printQRCode(String content, int size, int correctionLevel, int leftPadding, final Promise promise) {
         try {
             Log.i(TAG, "生成的文本：" + content);
- 
-            // 把输入的文本转为二维码 
+
+            // 把输入的文本转为二维码
             Hashtable<EncodeHintType, Object> hints = new Hashtable<EncodeHintType, Object>();
             hints.put(EncodeHintType.CHARACTER_SET, "utf-8");
             hints.put(EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.forBits(correctionLevel));
@@ -422,7 +445,7 @@ public class RNBluetoothEscposPrinterModule extends ReactContextBaseJavaModule
                     Bitmap.Config.ARGB_8888);
 
             bitmap.setPixels(pixels, 0, width, 0, 0, width, height);
- 
+
             byte[] data = PrintPicture.POS_PrintBMP(bitmap, size, 0, leftPadding);
             if (sendDataByte(data)) {
                 promise.resolve(null);
@@ -441,7 +464,57 @@ public class RNBluetoothEscposPrinterModule extends ReactContextBaseJavaModule
         sendDataByte(command);
     }
 
-   
+    @ReactMethod
+    private void getPrinterState(Promise promise) {
+        promise.resolve(mService.getMyResult() + " " + mService.getState());
+    }
+
+    @ReactMethod
+    private void polPosOnErrors (Promise promise) throws InterruptedException {
+        CmdFactory cmdFactory = new EscFactory();
+
+        Cmd cmd = cmdFactory.create();
+        cmd.append(cmd.getPrint80StausCmd(cmd_Exhausted_paper));
+        byte[] cmddata = cmd.getAppendCmds();
+        sendDataByte(cmddata);
+
+        cmd.clear();
+        cmd.append(cmd.getPrint80StausCmd(cmd_other_error));
+        cmddata = cmd.getAppendCmds();
+        sendDataByte(cmddata);
+
+        Thread.sleep(100);
+
+        cmd.clear();
+        cmd.append(cmd.getPrint80StausCmd(cmd_outpaper));
+        cmddata = cmd.getAppendCmds();
+        sendDataByte(cmddata);
+
+        Thread.sleep(100);
+
+        cmd.clear();
+        cmd.append(cmd.getPrint80StausCmd(cmd_Opencover));
+        cmddata = cmd.getAppendCmds();
+        sendDataByte(cmddata);
+
+        Thread.sleep(100);
+
+        cmd.clear();
+        cmd.append(cmd.getPrint80StausCmd(cmd_Connect_status));
+        cmddata = cmd.getAppendCmds();
+        sendDataByte(cmddata);
+
+        Thread.sleep(100);
+
+        cmd.clear();
+        cmd.append(cmd.getPrint80StausCmd(cmd_IsPrinting));
+        cmddata = cmd.getAppendCmds();
+        sendDataByte(cmddata);
+
+
+        promise.resolve("DATA_SEND");
+    }
+
     private boolean sendDataByte(byte[] data) {
         if (data==null || mService.getState() != BluetoothService.STATE_CONNECTED) {
             return false;
@@ -469,6 +542,9 @@ public class RNBluetoothEscposPrinterModule extends ReactContextBaseJavaModule
     public void onBluetoothServiceStateChanged(int state, Map<String, Object> boundle) {
 
     }
+
+    @Override
+    public void onPolPosErrorsChanged(String inputCode, String outputCode) {}
 
     /****************************************************************************************************/
 

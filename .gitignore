@@ -26,6 +26,7 @@ ios/.xcode.env.local
 #
 build/
 android/app/release
+android/build
 .idea
 .gradle
 local.properties
@@ -34,6 +35,7 @@ local.properties
 .cxx/
 *.keystore
 !debug.keystore
+*/build/
 
 # node.js
 #
@@ -68,4 +70,7 @@ use fastlane to re-generate the
 node_modules/
 *.lock
 
-android/build
+android/gradle/wrapper
+gradlew
+gradlew.bat
+

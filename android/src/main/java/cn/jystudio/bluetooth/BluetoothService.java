@@ -1,6 +1,9 @@
 
 package cn.jystudio.bluetooth;
 
+import static com.rt.printerlibrary.utils.FuncUtils.Byte2Hex;
+import static com.rt.printerlibrary.utils.FuncUtils.ByteArrToHex;
+
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothServerSocket;
@@ -55,9 +58,10 @@ public class BluetoothService {
     public static final String DEVICE_ADDRESS = "device_address";
     public static final String TOAST = "toast";
 
-    public static String ErrorMessage = "No_Error_Message";
+    public static String myResult = "";
 
     private static List<BluetoothServiceStateObserver> observers = new ArrayList<BluetoothServiceStateObserver>();
+    private static List<PolposMP80Observer> polposObservers = new ArrayList<PolposMP80Observer>();
 
     /**
      * Constructor. Prepares a new BTPrinter session.
@@ -78,15 +82,26 @@ public class BluetoothService {
         observers.remove(observer);
     }
 
+    public void addPolposObserver(PolposMP80Observer observer) {
+        polposObservers.add(observer);
+    }
+
+    public void removePolposObserver(PolposMP80Observer observer) {
+        polposObservers.remove(observer);
+    }
+
     /**
      * Set the current state of the connection
      *
      * @param state An integer defining the current connection state
      */
     private synchronized void setState(int state, Map<String, Object> bundle) {
+        if(state < 100) {
         if (DEBUG) Log.d(TAG, "setState() " + getStateName(mState) + " -> " + getStateName(state));
         mState = state;
-        infoObervers(state, bundle);
+
+            infoObervers(state, bundle);
+        }
     }
     private String getStateName(int state){
         String name="UNKNOW:" + state;
@@ -106,11 +121,21 @@ public class BluetoothService {
         }
     }
 
+    private synchronized void polposObservers(String inputCode, String outputCode) {
+        for (PolposMP80Observer ob : polposObservers) {
+            ob.onPolPosErrorsChanged(inputCode, outputCode);
+        }
+    }
+
     /**
      * Return the current connection state.
      */
     public synchronized int getState() {
         return mState;
+    }
+
+    public synchronized String getMyResult() {
+        return myResult;
     }
 
 
@@ -142,7 +167,7 @@ public class BluetoothService {
     }
 
 
-    public synchronized BluetoothDevice getConnectedDevice() { 
+    public synchronized BluetoothDevice getConnectedDevice() {
         BluetoothDevice connectedDevice = null;
         if(mConnectedThread!=null){
             connectedDevice = mConnectedThread.bluetoothDevice();
@@ -300,7 +325,11 @@ public class BluetoothService {
                         // Send the obtained bytes to the UI Activity
                         bundle = new HashMap<String, Object>();
                         bundle.put("bytes", bytes);
+
+                        polposObservers(mmDevice.getName(), ByteArrToHex(Arrays.copyOfRange(buffer,0, bytes)).replaceAll(" ", ""));
+
                         infoObervers(MESSAGE_READ, bundle);
+                        setState(STATE_CONNECTED, bundle);
                     } else {
                         Log.e(TAG, "disconnected");
                         connectionLost();
@@ -314,6 +343,7 @@ public class BluetoothService {
             }
             Log.i(TAG, "ConnectedThread End");
         }
+
 
         /**
          * Write to the connected OutStream.

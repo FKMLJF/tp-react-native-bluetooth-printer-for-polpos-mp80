@@ -297,6 +297,8 @@ declare module "tp-react-native-bluetooth-printer" {
       fontType: number | FONTTYPE,
       fontPosition: number
     ): void | string | PromiseLike<void> | PromiseLike<string>;
+
+    static polPosOnErrors(): Promise<string>;
   }
 
   export class BluetoothTscPrinter {

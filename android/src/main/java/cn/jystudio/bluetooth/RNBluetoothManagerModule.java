@@ -14,7 +14,6 @@ import android.os.Build;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import android.util.Log;
-import android.widget.Toast;
 import com.facebook.react.bridge.*;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 import org.json.JSONArray;
@@ -28,7 +27,7 @@ import java.util.Map;
 import java.util.Set;
 
 public class RNBluetoothManagerModule extends ReactContextBaseJavaModule
-        implements ActivityEventListener, BluetoothServiceStateObserver {
+        implements ActivityEventListener, BluetoothServiceStateObserver, PolposMP80Observer {
 
     private static final String TAG = "BluetoothManager";
     private final ReactApplicationContext reactContext;
@@ -38,6 +37,8 @@ public class RNBluetoothManagerModule extends ReactContextBaseJavaModule
     public static final String EVENT_CONNECTION_LOST = "EVENT_CONNECTION_LOST";
     public static final String EVENT_UNABLE_CONNECT = "EVENT_UNABLE_CONNECT";
     public static final String EVENT_CONNECTED = "EVENT_CONNECTED";
+
+    public static final String POLPOS_MP80_GET_ERROR = "POLPOS_MP80_GET_ERROR";
     public static final String EVENT_BLUETOOTH_NOT_SUPPORT = "EVENT_BLUETOOTH_NOT_SUPPORT";
 
 
@@ -78,6 +79,7 @@ public class RNBluetoothManagerModule extends ReactContextBaseJavaModule
         this.reactContext.addActivityEventListener(this);
         this.mService = bluetoothService;
         this.mService.addStateObserver(this);
+        this.mService.addPolposObserver(this);
         // Register for broadcasts when a device is discovered
         IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
         filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
@@ -470,5 +472,13 @@ public class RNBluetoothManagerModule extends ReactContextBaseJavaModule
             default:
                 break;
         }
+    }
+
+    @Override
+    public void onPolPosErrorsChanged(String inputCode, String outputCode) {
+        WritableMap params = Arguments.createMap();
+        params.putString("inputCode", inputCode);
+        params.putString("outputCode", outputCode);
+        emitRNEvent(POLPOS_MP80_GET_ERROR, params);
     }
 }
