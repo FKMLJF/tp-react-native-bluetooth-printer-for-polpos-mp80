@@ -272,7 +272,7 @@ declare module "tp-react-native-bluetooth-printer" {
     static printPic(
       base64Image: string,
       options?: PrintPictureOptions
-    ): void | PromiseLike<void>;
+    ): void | Promise<string>;
     static cutLine(
       line: number
     ): void | string | PromiseLike<void> | PromiseLike<string>;
