@@ -513,6 +513,7 @@ public class RNBluetoothEscposPrinterModule extends ReactContextBaseJavaModule
         cmddata = cmd.getAppendCmds();
         sendDataByte(cmddata);
 
+        Thread.sleep(3000);
         promise.resolve("DATA_SEND");
     }
 
