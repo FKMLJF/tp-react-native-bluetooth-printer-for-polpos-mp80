@@ -355,7 +355,7 @@ public class RNBluetoothEscposPrinterModule extends ReactContextBaseJavaModule
             int nMode = 0;
             if (mBitmap != null) {
                byte[] data = PrintPicture.POS_PrintBMP(mBitmap, width, nMode, leftPadding);
-               if (sendDataByte(bytes)) {
+               if (sendDataByte(data)) {
                     promise.resolve("PRINTED");
                 } else {
                     promise.reject("COMMAND_NOT_SEND");
