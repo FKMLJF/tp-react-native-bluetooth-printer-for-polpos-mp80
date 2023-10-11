@@ -363,7 +363,7 @@ public class RNBluetoothEscposPrinterModule extends ReactContextBaseJavaModule
                 sendDataByte(PrinterCommand.POS_Set_PrtAndFeedPaper(height));
                 // sendDataByte(PrinterCommand.POS_Set_Cut(1));
                 sendDataByte(PrinterCommand.POS_Set_PrtInit());
-                Thread.sleep(1000);
+                Thread.sleep(5000);
                 promise.resolve("PRINTED");
             }
         } catch (Exception error) {
@@ -479,42 +479,35 @@ public class RNBluetoothEscposPrinterModule extends ReactContextBaseJavaModule
         byte[] cmddata = cmd.getAppendCmds();
         sendDataByte(cmddata);
 
-        Thread.sleep(500);
+        Thread.sleep(300);
 
         cmd.clear();
         cmd.append(cmd.getPrint80StausCmd(cmd_other_error));
         cmddata = cmd.getAppendCmds();
         sendDataByte(cmddata);
 
-        Thread.sleep(500);
+        Thread.sleep(300);
 
         cmd.clear();
         cmd.append(cmd.getPrint80StausCmd(cmd_outpaper));
         cmddata = cmd.getAppendCmds();
         sendDataByte(cmddata);
 
-        Thread.sleep(500);
+        Thread.sleep(300);
 
         cmd.clear();
         cmd.append(cmd.getPrint80StausCmd(cmd_Opencover));
         cmddata = cmd.getAppendCmds();
         sendDataByte(cmddata);
 
-        Thread.sleep(500);
+        Thread.sleep(300);
 
         cmd.clear();
         cmd.append(cmd.getPrint80StausCmd(cmd_Connect_status));
         cmddata = cmd.getAppendCmds();
         sendDataByte(cmddata);
 
-        Thread.sleep(500);
-
-        cmd.clear();
-        cmd.append(cmd.getPrint80StausCmd(cmd_IsPrinting));
-        cmddata = cmd.getAppendCmds();
-        sendDataByte(cmddata);
-
-        Thread.sleep(3000);
+        Thread.sleep(1000);
         promise.resolve("DATA_SEND");
     }
 
