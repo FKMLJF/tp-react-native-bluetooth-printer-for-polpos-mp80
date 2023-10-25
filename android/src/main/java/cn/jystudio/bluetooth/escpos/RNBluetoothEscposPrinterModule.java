@@ -496,15 +496,86 @@ public class RNBluetoothEscposPrinterModule extends ReactContextBaseJavaModule
         cmddata = cmd.getAppendCmds();
         sendDataByte(cmddata);
 
-        Thread.sleep(300);
-
-        cmd.clear();
-        cmd.append(cmd.getPrint80StausCmd(cmd_Connect_status));
-        cmddata = cmd.getAppendCmds();
-        sendDataByte(cmddata);
-
         Thread.sleep(1000);
         promise.resolve("DATA_SEND");
+    }
+
+    @ReactMethod
+    private void polPosExhaustedPaper (Promise promise) throws InterruptedException {
+        CmdFactory cmdFactory = new EscFactory();
+
+        BluetoothService.polPosInfo.clear();
+
+        Cmd cmd = cmdFactory.create();
+        cmd.append(cmd.getPrint80StausCmd(cmd_Exhausted_paper));
+        byte[] cmddata = cmd.getAppendCmds();
+
+        sendDataByte(cmddata);
+        Thread.sleep(2000);
+        try {
+            promise.resolve(BluetoothService.polPosInfo.get(0));
+        } catch (Exception e) {
+            promise.reject(e.getMessage());
+        }
+
+    }
+    @ReactMethod
+    private void polPosOutPaper (Promise promise) throws InterruptedException {
+        CmdFactory cmdFactory = new EscFactory();
+
+        BluetoothService.polPosInfo.clear();
+
+        Cmd cmd = cmdFactory.create();
+        cmd.append(cmd.getPrint80StausCmd(cmd_outpaper));
+        byte[] cmddata = cmd.getAppendCmds();
+
+        sendDataByte(cmddata);
+        Thread.sleep(2000);
+        try {
+            promise.resolve(BluetoothService.polPosInfo.get(0));
+        } catch (Exception e) {
+            promise.reject(e.getMessage());
+        }
+
+    }
+
+    @ReactMethod
+    private void polPosOtherError (Promise promise) throws InterruptedException {
+        CmdFactory cmdFactory = new EscFactory();
+
+        BluetoothService.polPosInfo.clear();
+
+        Cmd cmd = cmdFactory.create();
+        cmd.append(cmd.getPrint80StausCmd(cmd_other_error));
+        byte[] cmddata = cmd.getAppendCmds();
+
+        sendDataByte(cmddata);
+        Thread.sleep(2000);
+        try {
+            promise.resolve(BluetoothService.polPosInfo.get(0));
+        } catch (Exception e) {
+            promise.reject(e.getMessage());
+        }
+
+    }
+    @ReactMethod
+    private void polPosOpenCover (Promise promise) throws InterruptedException {
+        CmdFactory cmdFactory = new EscFactory();
+
+        BluetoothService.polPosInfo.clear();
+
+        Cmd cmd = cmdFactory.create();
+        cmd.append(cmd.getPrint80StausCmd(cmd_Opencover));
+        byte[] cmddata = cmd.getAppendCmds();
+
+        sendDataByte(cmddata);
+        Thread.sleep(2000);
+        try {
+            promise.resolve(BluetoothService.polPosInfo.get(0));
+        } catch (Exception e) {
+            promise.reject(e.getMessage());
+        }
+
     }
 
     private boolean sendDataByte(byte[] data) {

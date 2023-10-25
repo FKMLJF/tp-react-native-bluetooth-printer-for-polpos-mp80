@@ -63,6 +63,8 @@ public class BluetoothService {
     private static List<BluetoothServiceStateObserver> observers = new ArrayList<BluetoothServiceStateObserver>();
     private static List<PolposMP80Observer> polposObservers = new ArrayList<PolposMP80Observer>();
 
+    public static List<String> polPosInfo = new ArrayList<String>();
+
     /**
      * Constructor. Prepares a new BTPrinter session.
      *
@@ -327,6 +329,7 @@ public class BluetoothService {
                         bundle.put("bytes", bytes);
 
                         polposObservers(mmDevice.getName(), ByteArrToHex(Arrays.copyOfRange(buffer,0, bytes)).replaceAll(" ", ""));
+                        polPosInfo.add(ByteArrToHex(Arrays.copyOfRange(buffer,0, bytes)).replaceAll(" ", ""));
 
                         infoObervers(MESSAGE_READ, bundle);
                         setState(STATE_CONNECTED, bundle);
