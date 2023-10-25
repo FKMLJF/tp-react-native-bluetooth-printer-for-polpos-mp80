@@ -299,6 +299,10 @@ declare module "tp-react-native-bluetooth-printer" {
     ): void | string | PromiseLike<void> | PromiseLike<string>;
 
     static polPosOnErrors(): Promise<string>;
+    static polPosExhaustedPaper(): Promise<string>;
+    static polPosOutPaper(): Promise<string>;
+    static polPosOtherError(): Promise<string>;
+    static polPosOpenCover(): Promise<string>;
   }
 
   export class BluetoothTscPrinter {
