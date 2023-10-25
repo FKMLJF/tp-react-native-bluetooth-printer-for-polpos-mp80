@@ -520,10 +520,10 @@ public class RNBluetoothEscposPrinterModule extends ReactContextBaseJavaModule
 
     }
     @ReactMethod
-    private void polPosOutPaper (Promise promise) throws InterruptedException {
+    private void polPosOutPaper (Promise promise) throws Exception {
         CmdFactory cmdFactory = new EscFactory();
 
-        BluetoothService.polPosInfo.clear();
+        BluetoothService.polPosInfo = new ArrayList<>();
 
         Cmd cmd = cmdFactory.create();
         cmd.append(cmd.getPrint80StausCmd(cmd_outpaper));
@@ -540,10 +540,10 @@ public class RNBluetoothEscposPrinterModule extends ReactContextBaseJavaModule
     }
 
     @ReactMethod
-    private void polPosOtherError (Promise promise) throws InterruptedException {
+    private void polPosOtherError (Promise promise) throws Exception {
         CmdFactory cmdFactory = new EscFactory();
 
-        BluetoothService.polPosInfo.clear();
+        BluetoothService.polPosInfo = new ArrayList<>();
 
         Cmd cmd = cmdFactory.create();
         cmd.append(cmd.getPrint80StausCmd(cmd_other_error));
@@ -559,10 +559,10 @@ public class RNBluetoothEscposPrinterModule extends ReactContextBaseJavaModule
 
     }
     @ReactMethod
-    private void polPosOpenCover (Promise promise) throws InterruptedException {
+    private void polPosOpenCover (Promise promise) throws Exception {
         CmdFactory cmdFactory = new EscFactory();
 
-        BluetoothService.polPosInfo.clear();
+        BluetoothService.polPosInfo = new ArrayList<>();
 
         Cmd cmd = cmdFactory.create();
         cmd.append(cmd.getPrint80StausCmd(cmd_Opencover));
